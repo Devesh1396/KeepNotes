@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:keep_notes/DataModel.dart';
+import 'package:keep_notes/NotesProvider.dart';
+import 'package:provider/provider.dart';
 
 class NoteEditor extends StatefulWidget {
 
@@ -16,11 +18,13 @@ class _NoteEditorState extends State<NoteEditor> {
 
   TextEditingController titleController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
-  final DatabaseHelper _dbHelper = DatabaseHelper();
+
+  NotesProvider? notesProvider;
 
   @override
   void initState() {
     super.initState();
+    notesProvider = Provider.of<NotesProvider>(context, listen: false);
 
     // Initialize with existing data if editing
     if (widget.isEdit && widget.noteId != null && widget.noteId!.isNotEmpty) {
@@ -28,13 +32,13 @@ class _NoteEditorState extends State<NoteEditor> {
     }
   }
 
-  // Fetching existing note data from the database
+  // Fetching existing note data from Provider
   Future<void> _loadNoteData() async {
-    Map<String, dynamic>? noteData = await _dbHelper.getNoteById(widget.noteId!);
+    Map<String, dynamic>? noteData = await notesProvider!.getNoteById(widget.noteId!);
 
     if (noteData != null) {
-      titleController.text = noteData[DatabaseHelper.Column_title] ?? '';
-      descriptionController.text = noteData[DatabaseHelper.Column_desc] ?? '';
+        titleController.text = noteData[DatabaseHelper.Column_title] ?? '';
+        descriptionController.text = noteData[DatabaseHelper.Column_desc] ?? '';
     }
   }
 
@@ -45,18 +49,18 @@ class _NoteEditorState extends State<NoteEditor> {
 
     if (title.isNotEmpty && description.isNotEmpty) {
       if (widget.isEdit) {
-        await _dbHelper.updateNote(
-            noteId: widget.noteId!,
-            title: title,
-            description: description,
-            stamp: DateTime.now().millisecondsSinceEpoch);
+        await notesProvider!.updateNote(
+            widget.noteId!,
+            title,
+            description,
+            DateTime.now().millisecondsSinceEpoch);
         titleController.clear();
         descriptionController.clear();
       } else {
-        await _dbHelper.insertNote(
-            title: title,
-            desc: description,
-            stamp: DateTime.now().millisecondsSinceEpoch);
+        await notesProvider!.insertNote(
+            title,
+            description,
+            DateTime.now().millisecondsSinceEpoch);
         titleController.clear();
         descriptionController.clear();
       }

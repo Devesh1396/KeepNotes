@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:keep_notes/DataModel.dart';
 import 'package:keep_notes/NoteEditorUI.dart';
+import 'package:keep_notes/NotesProvider.dart';
+import 'package:provider/provider.dart';
 
 class NoteUI extends StatefulWidget {
   @override
@@ -9,24 +10,18 @@ class NoteUI extends StatefulWidget {
 }
 
 class _NoteUIState extends State<NoteUI> {
-  List<Map<String, dynamic>> _notes = [];
-  final DatabaseHelper _dbHelper = DatabaseHelper();
 
   @override
   void initState() {
     super.initState();
-    _loadNotes();
-  }
-
-  void _loadNotes() async {
-    final data = await _dbHelper.getNotes();
-    setState(() {
-      _notes = data;
-    });
+    Provider.of<NotesProvider>(context, listen: false).loadNotes();
   }
 
   @override
   Widget build(BuildContext context) {
+
+    final notesProvider = Provider.of<NotesProvider>(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -35,7 +30,7 @@ class _NoteUIState extends State<NoteUI> {
         elevation: 0,
         title: Text('Note Keeper', style: TextStyle(color: Colors.white)),
       ),
-      body: _notes.isEmpty
+      body: notesProvider.notes.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -52,7 +47,7 @@ class _NoteUIState extends State<NoteUI> {
                         MaterialPageRoute(
                           builder: (context) => NoteEditor(isEdit: false),
                         ),
-                      ).then((value) => _loadNotes());
+                      );
                     },
                     child: Text('Add Note'),
                   ),
@@ -60,9 +55,9 @@ class _NoteUIState extends State<NoteUI> {
               ),
             )
           : ListView.separated(
-              itemCount: _notes.length,
+              itemCount: notesProvider.notes.length,
               itemBuilder: (context, index) {
-                final note = _notes[index];
+                final note = notesProvider.notes[index];
                 String noteId = note['uid'].toString();
 
                 int timestamp = note['timestamp'];
@@ -84,9 +79,9 @@ class _NoteUIState extends State<NoteUI> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => NoteEditor(noteId: noteId, isEdit: true),  // Navigate to the AddNoteScreen
+                              builder: (context) => NoteEditor(noteId: noteId, isEdit: true),
                             ),
-                          ).then((value) => _loadNotes());
+                          );
                         },
                       ),
                       IconButton(
@@ -101,15 +96,15 @@ class _NoteUIState extends State<NoteUI> {
               },
               separatorBuilder: (context, index) => Divider(),
             ),
-      floatingActionButton: _notes.isNotEmpty
+      floatingActionButton: notesProvider.notes.isNotEmpty
           ? FloatingActionButton(
               onPressed: (){
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => NoteEditor(isEdit: false),  // Navigate to the AddNoteScreen
+                    builder: (context) => NoteEditor(isEdit: false),
                   ),
-                ).then((value) => _loadNotes());
+                );
               },
               child: Icon(Icons.add, color: Colors.black),
             )
@@ -136,9 +131,8 @@ class _NoteUIState extends State<NoteUI> {
             ),
             TextButton(
               onPressed: () async {
-                await _dbHelper.deleteNoteById(noteId);
+                await Provider.of<NotesProvider>(context, listen: false).deleteNoteById(noteId);
                 Navigator.of(context).pop();
-                _loadNotes();
               },
               child: Text("Yes"),
             ),
