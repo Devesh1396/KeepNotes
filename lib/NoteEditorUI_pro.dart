@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:keep_notes/DataModel.dart';
-import 'package:keep_notes/NotesCubit.dart';
+import 'package:keep_notes/NotesProvider.dart';
+import 'package:provider/provider.dart';
 
 class NoteEditor extends StatefulWidget {
 
@@ -19,14 +19,14 @@ class _NoteEditorState extends State<NoteEditor> {
   TextEditingController titleController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
 
-  NotesCubit? notesCubit;
+  NotesProvider? notesProvider;
 
   @override
   void initState() {
     super.initState();
+    notesProvider = Provider.of<NotesProvider>(context, listen: false);
 
-    notesCubit = context.read<NotesCubit>();
-
+    // Initialize with existing data if editing
     if (widget.isEdit && widget.noteId != null && widget.noteId!.isNotEmpty) {
       _loadNoteData();
     }
@@ -34,7 +34,7 @@ class _NoteEditorState extends State<NoteEditor> {
 
   // Fetching existing note data from Provider
   Future<void> _loadNoteData() async {
-    Map<String, dynamic>? noteData = await notesCubit?.getNoteById(widget.noteId!);
+    Map<String, dynamic>? noteData = await notesProvider!.getNoteById(widget.noteId!);
 
     if (noteData != null) {
         titleController.text = noteData[DatabaseHelper.Column_title] ?? '';
@@ -49,18 +49,18 @@ class _NoteEditorState extends State<NoteEditor> {
 
     if (title.isNotEmpty && description.isNotEmpty) {
       if (widget.isEdit) {
-        await notesCubit?.updateNote(
+        await notesProvider!.updateNote(
             widget.noteId!,
             title,
             description,
-            );
+            DateTime.now().millisecondsSinceEpoch);
         titleController.clear();
         descriptionController.clear();
       } else {
-        await notesCubit?.insertNote(
+        await notesProvider!.insertNote(
             title,
             description,
-           );
+            DateTime.now().millisecondsSinceEpoch);
         titleController.clear();
         descriptionController.clear();
       }

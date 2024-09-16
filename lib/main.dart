@@ -1,17 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:keep_notes/NotesProvider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:keep_notes/NotesCubit.dart';
 import 'package:keep_notes/Noteshome_UI.dart';
-import 'package:provider/provider.dart';
 
 
-void main() {
+/*void main() {
   runApp(
     ChangeNotifierProvider(
       create: (context) => NotesProvider(),
       child: MyApp(),
     ),
   );
+}*/
+
+
+void main() {
+  runApp(
+    BlocProvider(
+      create: (context) => NotesCubit()..loadNotes(),
+      child: MyApp(),
+    ),
+  );
 }
+
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
