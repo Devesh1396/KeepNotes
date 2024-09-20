@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:keep_notes/NotesCubit.dart';
 import 'package:keep_notes/Noteshome_UI.dart';
-
+import 'package:keep_notes/bloc/events.dart';
+import 'package:keep_notes/bloc/notes_bloc.dart';
 
 /*void main() {
   runApp(
@@ -13,17 +14,23 @@ import 'package:keep_notes/Noteshome_UI.dart';
   );
 }*/
 
+// void main() {
+//   runApp(
+//     BlocProvider(
+//       create: (context) => NotesCubit()..loadNotes(),
+//       child: MyApp(),
+//     ),
+//   );
+// }
 
 void main() {
   runApp(
     BlocProvider(
-      create: (context) => NotesCubit()..loadNotes(),
+      create: (context) => NotesBloc()..add(FetchNotesEvent()),
       child: MyApp(),
     ),
   );
 }
-
-
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

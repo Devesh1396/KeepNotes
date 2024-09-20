@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:keep_notes/DataModel.dart';
-import 'package:keep_notes/NotesCubit.dart';
+import 'package:keep_notes/bloc/events.dart';
+import 'package:keep_notes/bloc/notes_bloc.dart';
+import 'package:keep_notes/bloc/states.dart';
 
 class NoteEditor extends StatefulWidget {
-
   final String? noteId;
   final bool isEdit;
 
@@ -15,55 +16,34 @@ class NoteEditor extends StatefulWidget {
 }
 
 class _NoteEditorState extends State<NoteEditor> {
-
   TextEditingController titleController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
-
-  NotesCubit? notesCubit;
 
   @override
   void initState() {
     super.initState();
 
-    notesCubit = context.read<NotesCubit>();
-
     if (widget.isEdit && widget.noteId != null && widget.noteId!.isNotEmpty) {
-      _loadNoteData();
-    }
-  }
-
-  // Fetching existing note data from Provider
-  Future<void> _loadNoteData() async {
-    Map<String, dynamic>? noteData = await notesCubit?.getNoteById(widget.noteId!);
-
-    if (noteData != null) {
-        titleController.text = noteData[DatabaseHelper.Column_title] ?? '';
-        descriptionController.text = noteData[DatabaseHelper.Column_desc] ?? '';
+      context.read<NotesBloc>().add(GetNoteByIdEvent(widget.noteId!));
     }
   }
 
   //Add or Update Note
-  void _saveNote() async{
+  void _saveNote() {
     String title = titleController.text;
     String description = descriptionController.text;
 
     if (title.isNotEmpty && description.isNotEmpty) {
       if (widget.isEdit) {
-        await notesCubit?.updateNote(
-            widget.noteId!,
-            title,
-            description,
-            );
-        titleController.clear();
-        descriptionController.clear();
+        context
+            .read<NotesBloc>()
+            .add(UpdateNoteEvent(widget.noteId!, title, description));
       } else {
-        await notesCubit?.insertNote(
-            title,
-            description,
-           );
-        titleController.clear();
-        descriptionController.clear();
+        context.read<NotesBloc>().add(AddNoteEvent(title, description));
       }
+
+      titleController.clear();
+      descriptionController.clear();
       Navigator.pop(context);
     }
   }
@@ -74,7 +54,7 @@ class _NoteEditorState extends State<NoteEditor> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         leading: IconButton(
-            onPressed: (){
+            onPressed: () {
               Navigator.pop(context);
             },
             icon: Container(
@@ -87,40 +67,61 @@ class _NoteEditorState extends State<NoteEditor> {
                 Icons.arrow_back,
                 color: Colors.black,
               ),
-            )
-        ),
+            )),
         backgroundColor: Colors.black,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: TextField(
-          controller: titleController,
-          decoration: InputDecoration(
-            hintText: widget.isEdit && titleController.text.isNotEmpty ? null : 'Title...',
-            border: InputBorder.none,
-            hintStyle: TextStyle(color: Colors.white),
-          ),
-          style: TextStyle(color: Colors.white, fontSize: 18),
-        ),
+        title: BlocBuilder<NotesBloc, NotesState>(builder: (context, state) {
+          if (state is NoteByIdLoaded) {
+            titleController.text = state.note[DatabaseHelper.Column_title] ?? '';
+          }
+          return TextField(
+            controller: titleController,
+            decoration: InputDecoration(
+              hintText: widget.isEdit && titleController.text.isNotEmpty ? null : 'Title...',
+              border: InputBorder.none,
+              hintStyle: TextStyle(color: Colors.white),
+            ),
+            style: TextStyle(color: Colors.white, fontSize: 18),
+          );
+        }),
         actions: [
           IconButton(
             icon: Icon(Icons.save, color: Colors.white),
-            onPressed: (){
+            onPressed: () {
               _saveNote();
             },
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: TextField(
-          controller: descriptionController,
-          decoration: InputDecoration(
-            hintText: widget.isEdit && descriptionController.text.isNotEmpty ? null : 'Start typing...',
-            border: InputBorder.none,
+      body: BlocListener<NotesBloc, NotesState>(
+        listener: (context, state) {
+          if (state is NotesError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message)),
+            );
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: BlocBuilder<NotesBloc, NotesState>(
+            builder: (context, state) {
+              if (state is NoteByIdLoaded) {
+                descriptionController.text = state.note[DatabaseHelper.Column_desc] ?? '';
+              }
+              return TextField(
+                controller: descriptionController,
+                decoration: InputDecoration(
+                  hintText:
+                      widget.isEdit && descriptionController.text.isNotEmpty ? null : 'Start typing...',
+                  border: InputBorder.none,
+                ),
+                maxLines: null,
+                expands: true,
+                keyboardType: TextInputType.multiline,
+              );
+            },
           ),
-          maxLines: null,
-          expands: true,
-          keyboardType: TextInputType.multiline,
         ),
       ),
     );

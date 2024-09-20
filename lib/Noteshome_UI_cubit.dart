@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:keep_notes/NoteEditorUI.dart';
-import 'package:keep_notes/bloc/events.dart';
-import 'package:keep_notes/bloc/notes_bloc.dart';
-import 'package:keep_notes/bloc/states.dart';
+import 'package:keep_notes/NotesCubit.dart';
 
 class NoteUI extends StatelessWidget {
   @override
@@ -17,7 +15,7 @@ class NoteUI extends StatelessWidget {
         elevation: 0,
         title: Text('Note Keeper', style: TextStyle(color: Colors.white)),
       ),
-      body: BlocBuilder<NotesBloc, NotesState>(
+      body: BlocBuilder<NotesCubit, NotesState>(
         builder: (context, state) {
           if (state is NotesLoading) {
             return Center(child: CircularProgressIndicator());
@@ -101,7 +99,7 @@ class NoteUI extends StatelessWidget {
           }
         },
       ),
-      floatingActionButton: BlocBuilder<NotesBloc, NotesState>(
+      floatingActionButton: BlocBuilder<NotesCubit, NotesState>(
         builder: (context, state) {
           if (state is NotesLoaded && state.notes.isNotEmpty) {
             return FloatingActionButton(
@@ -128,7 +126,7 @@ class NoteUI extends StatelessWidget {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return BlocListener<NotesBloc, NotesState>(
+        return BlocListener<NotesCubit, NotesState>(
           listener: (context, state) {
             if (state is NotesError) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -150,8 +148,8 @@ class NoteUI extends StatelessWidget {
                 child: Text("No"),
               ),
               TextButton(
-                onPressed: ()  {
-                  context.read<NotesBloc>().add(DeleteNoteEvent(noteId));
+                onPressed: () async {
+                  await context.read<NotesCubit>().deleteNoteById(noteId);
                   Navigator.of(context).pop();
                 },
                 child: Text("Yes"),
